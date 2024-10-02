@@ -8,7 +8,7 @@ COPY . .
 
 
 RUN  yum install -y openssl-devel \
-	 && yum -y install binutils-devel.x86_64 \
+	&& yum -y install binutils-devel.x86_64 \
      && yum install -y libXext libSM libXrender \
      && yum install -y libsndfile \
      && yum install -y tar \
@@ -26,7 +26,7 @@ RUN  yum install -y openssl-devel \
      && python3 -m pip install onnxruntime==1.10.0 \
      && python3 -m pip install tflite-runtime==2.7.0 \
      && python3 -m pip install boto3 \
-     && python3 -m pip install pyinstaller
+     && python3 -m pip install pyinstaller \
      && yum install -y libsndfile zip unzip \
      && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
      && unzip awscliv2.zip \

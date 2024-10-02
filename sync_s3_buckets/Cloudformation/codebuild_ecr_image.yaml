@@ -8,7 +8,7 @@ Parameters:
       Type: String
       Default: "https://github.com/DionisioII/aws_tools"
     
-    SourceCodeRepoBrache:
+    SourceCodeRepoBranch:
       Description: The name of the Github Repository which stores the code 
       Type: String
       Default: "main"
@@ -116,7 +116,7 @@ Resources:
       #ImageScanningConfiguration:
         # ScanOnPush: true
 
-BuildProjectDocker:
+  BuildProjectDocker:
     Type: AWS::CodeBuild::Project
     DependsOn: 
       
@@ -125,6 +125,7 @@ BuildProjectDocker:
       
       
     Properties:
+      Name: "ContainerImage-s3-sync"
       Description: This build creates a docker image and push it to ECRRepository
       ServiceRole: !GetAtt BuildProjectRole.Arn
       Artifacts:
@@ -144,10 +145,10 @@ BuildProjectDocker:
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED #DISABLED #ENABLED
-      SourceVersion: !Ref SourceCodeBranchNameForDockerVideoAnlyzer
+      SourceVersion: !Ref SourceCodeRepoBranch
       Source:
         Type: GITHUB
-        Location: !Ref SourceCodeRepoNameForDockerVideoAnlyzer
+        Location: !Ref SourceCodeRepoName
         BuildSpec: !Sub
           |
             ---
