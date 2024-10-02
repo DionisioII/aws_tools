@@ -7,7 +7,7 @@ import sys
 
 def main():
 
-    print("main called")
+    
     src_bucket = os.environ.get('SOURCE_BUCKET')
     dst_bucket = os.environ.get('DESTINATION_BUCKET')
     additional_line_params = os.environ.get('ADDITIONAL_LINE_PARAMS', '') #for example ' --exclude "*" --include "folder/*" '
