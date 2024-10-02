@@ -23,14 +23,14 @@ Resources:
     Properties:
       RequiresCompatibilities:
         - "FARGATE"
-      ExecutionRoleArn: !Ref fargateTaskExecutionRole #"arn:aws:iam::<replace with account ID>:role/ecsTaskExecutionRole" #tochange
+      ExecutionRoleArn: !Ref fargateTaskExecutionRole 
       TaskRoleArn: !Ref fargateTaskRole
       Cpu: 2048
       Memory: 4096 #5120
       NetworkMode: "awsvpc"
       ContainerDefinitions:
         - Name: "s3-sync-container"
-          Image: !Import   ECR::Repository::Uri
+          Image: !ImportValue  ECR::Repository::Uri
           EntryPoint:
             - ""
           Command:
@@ -99,3 +99,4 @@ Resources:
                 Resource: "*"
       ManagedPolicyArns:
       - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+      - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
