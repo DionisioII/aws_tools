@@ -32,5 +32,5 @@ RUN  yum install -y openssl-devel \
      && unzip awscliv2.zip \
      && ./aws/install
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python3", "main.py"]
 #CMD /bin/bash
