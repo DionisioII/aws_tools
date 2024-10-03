@@ -47,7 +47,7 @@ def main():
             key = obj['Key']
             if ends_with_any(key,file_extensions):  # Check if key is within the folder
                 logging.debug("analyzing key: " + key)  # Replace with your desired action
-                elaborate_file_locally(src_bucket,s3_object_key)
+                elaborate_file_locally(src_bucket,key)
 
 
 if __name__ == '__main__':
