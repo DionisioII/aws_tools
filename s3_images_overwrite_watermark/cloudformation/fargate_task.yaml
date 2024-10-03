@@ -1,0 +1,107 @@
+Description: "codebuild project to set ECR fardgate task"
+
+Parameters:
+
+  FargateLogGroupName:
+    Type: String
+    Description: name of the log group for fargate tasks
+    Default: /fargate/s3_iamge_watermark
+  
+  FargateClusterName:
+    Type: String
+    Description: name of the Fargate Cluster
+    Default: FgCluster
+          
+    
+    
+Resources:
+
+  #fargate cluter
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName: !Ref FargateClusterName
+
+  #fargate task
+  fargateTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      RequiresCompatibilities:
+        - "FARGATE"
+      ExecutionRoleArn: !Ref fargateTaskExecutionRole 
+      TaskRoleArn: !Ref fargateTaskRole
+      Cpu: 2048
+      Memory: 4096 #5120
+      NetworkMode: "awsvpc"
+      ContainerDefinitions:
+        - Name: "s3_image_watermark"
+          Image: !ImportValue  ECR::Repository::Uri
+          # EntryPoint:
+          #   - ""
+          # Command:
+          #   - "python3 main.py"
+          #MemoryReservation: 256
+          #Memory: 512
+          #PortMappings:
+          #  - ContainerPort: 8080
+          #    Protocol: tcp
+          LogConfiguration: 
+            LogDriver: "awslogs"
+            Options:
+               "awslogs-group": !Ref FargateLogGroupName
+               "awslogs-region": !Sub "${AWS::Region}"
+               "awslogs-stream-prefix": "ecs"
+
+  cloudwatchFargateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      
+      LogGroupName: !Ref FargateLogGroupName
+      RetentionInDays: 5
+
+   # IAM execution role for ecs fargate cluster above
+  fargateTaskExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'ecs-tasks.amazonaws.com'
+          Action: 'sts:AssumeRole' 
+      ManagedPolicyArns:
+      - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+  
+   # IAM role for ecs fargate task above
+  fargateTaskRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'ecs-tasks.amazonaws.com'
+          Action: 'sts:AssumeRole' 
+      Policies:
+        - PolicyName: ecsAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  -  "ecr:BatchCheckLayerAvailability"
+                  -  "ecr:BatchGetImage"
+                  -  "ecr:GetDownloadUrlForLayer"
+                  -  "ecr:GetAuthorizationToken"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  -  "states:SendTaskSuccess"
+                  -  "states:SendTaskFailure"
+                  -  "states:SendTaskHeartbeat"
+                Resource: "*"
+      ManagedPolicyArns:
+      - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+      - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'

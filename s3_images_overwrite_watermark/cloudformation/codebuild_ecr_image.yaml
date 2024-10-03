@@ -1,0 +1,187 @@
+Description: "codebuild project to build ecr image"
+
+Parameters:
+          
+    
+    SourceCodeRepoName:
+      Description: The name of the Github Repository which stores the code 
+      Type: String
+      Default: "https://github.com/DionisioII/aws_tools"
+    
+    SourceCodeRepoBranch:
+      Description: The name of the Github Repository which stores the code 
+      Type: String
+      Default: "main"
+    EcrImageRepo:
+      Description: The name of the ecr repo for docker analizer
+      Type: String
+      Default: "s3_watermark"
+    EcrImageRepoTag:
+      Description: The name of the ecr repo tag, usually latest
+      Type: String
+      Default: "latest"
+
+Resources:
+
+  BuildProjectRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CodeBuildProjectRoleForEc2InstanceCreate
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: s3cloudwatch
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AllowECRAccess
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchGetImage
+                  - ecr:ListImages
+                  - ecr:*
+                  # Add other ECR actions as needed (e.g., ecr:BatchDeleteImage)
+                Resource:
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
+              
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  
+                Resource: 
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 
+                  - arn:aws:logs:*:*:*
+              - Sid: ec2Permissions
+                Effect: Allow
+                Action:
+                - ec2:AttachVolume
+                - ec2:AuthorizeSecurityGroupIngress
+                - ec2:CopyImage
+                - ec2:CreateImage
+                - ec2:CreateKeypair
+                - ec2:CreateSecurityGroup
+                - ec2:CreateSnapshot
+                - ec2:CreateTags
+                - ec2:CreateVolume
+                - ec2:DeleteKeyPair
+                - ec2:DeleteSecurityGroup
+                - ec2:DeleteSnapshot
+                - ec2:DeleteVolume
+                - ec2:DeregisterImage
+                - ec2:DescribeImageAttribute
+                - ec2:DescribeImages
+                - ec2:DescribeInstances
+                - ec2:DescribeInstanceStatus
+                - ec2:DescribeRegions
+                - ec2:DescribeSecurityGroups
+                - ec2:DescribeSnapshots
+                - ec2:DescribeSubnets
+                - ec2:DescribeTags
+                - ec2:DescribeVolumes
+                - ec2:DetachVolume
+                - ec2:GetPasswordData
+                - ec2:ModifyImageAttribute
+                - ec2:ModifyInstanceAttribute
+                - ec2:ModifySnapshotAttribute
+                - ec2:RegisterImage
+                - ec2:RunInstances
+                - ec2:StopInstances
+                - ec2:TerminateInstances
+                Resource: "*"
+              
+                  
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AWSCodeCommitPowerUser"
+        - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+      Path: "/service-role/"
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref EcrImageRepo
+      #ImageScanningConfiguration:
+        # ScanOnPush: true
+
+  BuildProjectDocker:
+    Type: AWS::CodeBuild::Project
+    DependsOn: 
+      
+      - BuildProjectRole
+      - ECRRepository
+      
+      
+    Properties:
+      Name: "ContainerImage-s3-setWatermark"
+      Description: This build creates a docker image and push it to ECRRepository
+      ServiceRole: !GetAtt BuildProjectRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS #CodePipeLine #NO_ARTIFACTS #S3
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+        EnvironmentVariables: 
+          - Name: IMAGE_REPO_NAME
+            Type: PLAINTEXT
+            Value: !Ref EcrImageRepo
+          - Name: IMAGE_TAG
+            Type: PLAINTEXT 
+            Value: !Ref EcrImageRepoTag
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED #DISABLED #ENABLED
+      SourceVersion: !Ref SourceCodeRepoBranch
+      Source:
+        Type: GITHUB
+        Location: !Ref SourceCodeRepoName
+        BuildSpec: !Sub
+          |
+            ---
+            version: 0.2
+
+            phases:
+              pre_build:
+                commands:
+                  - cd s3_images_overwrite_watermark
+                  - cd src
+                  
+                  - echo Logging in to Amazon ECR...
+                  - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+              build:
+                commands:
+                 
+                  - echo Build started on `date`
+                  - echo Building the Docker image... 
+                  - ls -la
+                  - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+                  - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG ${AWS::AccountId}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG      
+                  
+              post_build:
+                commands:
+                  - echo Build completed on `date`
+                  - echo Pushing the Docker image...
+                  - docker push ${AWS::AccountId}.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+
+Outputs:
+  ECRImage:
+    Description: ECRImageReference
+    Value: !GetAtt ECRRepository.RepositoryUri
+    Export:
+      Name: ECR::Repository::Uri
+
