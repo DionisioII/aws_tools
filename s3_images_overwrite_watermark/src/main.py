@@ -3,6 +3,7 @@ import subprocess
 import boto3
 from utils import WatermarkImage, ends_with_any
 
+import cv2
 import sys
 import logging
 
