@@ -1,7 +1,7 @@
 import os
 import subprocess
 import boto3
-from ./utils import WatermarkImage, ends_with_any
+from utils import WatermarkImage, ends_with_any
 
 import sys
 import logging
