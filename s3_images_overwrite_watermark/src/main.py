@@ -7,7 +7,7 @@ import cv2
 import sys
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 s3 = boto3.client('s3')
