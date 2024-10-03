@@ -42,7 +42,7 @@ def main():
     
     paginator = s3.get_paginator('list_objects_v2')
 
-    for page in paginator.paginate(Bucket=bucket_name, Prefix=f"{folder_name}"):
+    for page in paginator.paginate(Bucket=src_bucket, Prefix=f"{folder_name}"):
         for obj in page.get('Contents', []):
             key = obj['Key']
             if ends_with_any(key,file_extensions):  # Check if key is within the folder
