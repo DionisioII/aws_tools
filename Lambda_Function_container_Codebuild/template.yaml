@@ -3,10 +3,7 @@ Description: "codebuild project, pause, run build, then deploy lambda function"
 Parameters:
        
 
-    APIsBasePath:
-      Type: String
-      Default: /
-    
+        
     SourceCodeRepoName:
       Description: The name of the Github Repository which stores the s3 static site code
       Type: String
@@ -15,7 +12,7 @@ Parameters:
     SourceCodeBranchName:
       Description: The name of the CodeCommit branch in the repo which stores the s3 static site code
       Type: String
-      Default: "teleskill_ecampus"
+      Default: ""
 
     EcrImageRepo:
       Description: The name of the ecr repo for lambda function source
@@ -26,23 +23,10 @@ Parameters:
       Type: String
       Default: "latest"
 
-    # dnsName:
-    #     Type: String
-    #     Description: the subnet where to Launch the alb service
-    #     Default: 'placeholder.emojlab.com'
-
-    # EcrImageUri:
-    #   Description: ECR image URI for lambda function
-    #   Type: String
-    #   Default: '136810562037.dkr.ecr.eu-central-1.amazonaws.com/lambda_emo_api:latest'
+    
 
 Resources:  
     
-    # SSLCertificateForHTTPSApi: 
-    #   Type: "AWS::CertificateManager::Certificate"
-    #   Properties: 
-    #     DomainName: !Ref dnsName #'ecampusproc.emojlab.com'
-    #     ValidationMethod: 'DNS'
 
     ##### START Codebuild project section PART #################################################################
     
@@ -79,7 +63,7 @@ Resources:
                     - ecr:BatchGetImage
                     - ecr:ListImages
                     - ecr:*
-                    # Add other ECR actions as needed (e.g., ecr:BatchDeleteImage)
+                    
                   Resource:
                     - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
                
@@ -105,7 +89,7 @@ Resources:
     BuildProject:
       Type: AWS::CodeBuild::Project
       DependsOn: 
-        #- CodeBuildSourceCreds
+      
         - BuildProjectRole
         - ECRRepository
         
@@ -189,7 +173,7 @@ Resources:
           - CustomCodeRunFunction
           - Arn
         Region: !Ref "AWS::Region"
-        #ParamSendToLambda: "a,b,c"
+       
     CustomCodeRunFunction:
       Type: "AWS::Lambda::Function"
       Properties:
@@ -341,7 +325,7 @@ Outputs:
   lmbFunctionArn:
     Value: !GetAtt  lambdaBackendFunction.Arn
     Export:
-      Name: "Ai::ImageAnalisys::lambda::Arn"
+      Name: "Lambda::Arn"
 
   
 
